@@ -11,7 +11,7 @@ const TRIP_TABS = ['Overview', 'Itinerary', 'Accommodations', "What's Included",
 export default function TripDetail() {
   const { tripId } = useParams();
   const navigate = useNavigate();
-  const { state, dispatch, showToast, addAuditEntry, getDepartures, getConfirmedCount, getAvailableSpaces } = useApp();
+  const { state, dispatch, showToast, addAuditEntry, getDepartures, getConfirmedCount, getAvailableSpaces, isAtRisk } = useApp();
 
   const trip = state.trips.find(t => t.id === tripId);
   const [activeTab, setActiveTab] = useState('Overview');
@@ -310,14 +310,25 @@ export default function TripDetail() {
                 <tbody>
                   {departures.map(dep => {
                     const confirmed = getConfirmedCount(dep);
+                    const depAtRisk = isAtRisk(dep);
                     return (
-                      <tr key={dep.id}>
-                        <td className="td-bold">{formatDate(dep.departureDate)}</td>
+                      <tr key={dep.id} style={depAtRisk ? { background: '#fffdf5' } : {}}>
+                        <td className="td-bold">
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                            {depAtRisk && <Icons.AlertTriangle style={{ width: 13, height: 13, color: 'var(--color-warning)', flexShrink: 0 }} />}
+                            {formatDate(dep.departureDate)}
+                          </div>
+                        </td>
                         <td className="td-muted">{formatDate(dep.returnDate)}</td>
                         <td>${dep.price?.toLocaleString()}</td>
                         <td>${dep.depositAmount?.toLocaleString()}</td>
                         <td style={{ minWidth: 160 }}>
                           <OccupancyBar confirmed={confirmed} max={dep.maxParticipants} min={dep.minParticipants} />
+                          {depAtRisk && (
+                            <div style={{ font: '400 11px/1 var(--font-family)', color: 'var(--color-warning)', marginTop: 3 }}>
+                              {confirmed}/{dep.minParticipants} minimum needed
+                            </div>
+                          )}
                         </td>
                         <td><StatusBadge status={dep.status} /></td>
                         <td>

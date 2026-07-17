@@ -149,8 +149,8 @@ export default function GuestPublicCalendar() {
                         <div style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>From</div>
                         <div style={{ fontSize: 18, fontWeight: 600, color: 'var(--color-primary)' }}>${dep.price?.toLocaleString()}</div>
                       </div>
-                      <Link to={`/public/tours/${trip.slug}?departure=${dep.id}`} className="btn btn-primary">
-                        View Trip
+                      <Link to={`/public/tours/${trip.slug}?departure=${dep.id}`} className={dep.status === 'Open for Booking' ? "btn btn-primary" : "btn btn-secondary"}>
+                        {(dep.status === 'Waitlist Only' || (dep.status === 'Sold Out' && dep.waitlistEnabled)) ? 'Join Waitlist' : 'View Trip'}
                       </Link>
                     </div>
                   </div>

@@ -17,10 +17,11 @@ export default function GuestTripPage() {
   const [activeTab, setActiveTab] = useState('Overview');
   const [showBookingFlow, setShowBookingFlow] = useState(false);
   
-  if (!trip) {
+  if (!trip || trip.publishStatus === 'Draft' || trip.publishStatus === 'Inactive') {
     return (
       <div style={{ textAlign: 'center', padding: '100px 20px', fontFamily: 'var(--font-family)' }}>
         <h1 style={{ fontSize: 32, marginBottom: 16 }}>Trip Not Found</h1>
+        <p style={{ color: 'var(--color-text-secondary)', marginBottom: 24 }}>This trip is currently unavailable.</p>
         <Link to="/public/calendar" style={{ color: 'var(--color-primary)', textDecoration: 'none' }}>← Back to Calendar</Link>
       </div>
     );

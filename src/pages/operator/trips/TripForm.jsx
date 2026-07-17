@@ -6,11 +6,12 @@ import { Icons } from '../../../components/ui/Icons';
 
 const REGIONS = ['Europe', 'Asia-Pacific', 'Africa', 'Latin America', 'Other'];
 const TRIP_TYPES = ['Standard Trip', 'One-Time Trip', 'Trip Extension'];
+const BRANDS = ['Detours', 'Mawari'];
 const DESTINATION_SUGGESTIONS = ['Greece', 'Thailand', 'Cambodia', 'Japan', 'France', 'Germany', 'Italy', 'Spain', 'New Zealand', 'Australia', 'Kenya', 'Morocco', 'Peru', 'Colombia', 'Iceland'];
 
 const EMPTY_TRIP = {
   title: '', slug: '', shortDescription: '', fullDescription: '',
-  tripType: 'Standard Trip', duration: '', destinations: [], region: 'Europe',
+  brand: 'Detours', tripType: 'Standard Trip', duration: '', destinations: [], region: 'Europe',
   departureCity: '', endCity: '', heroImage: '', mapImage: '', carouselImages: [],
   basePrice: '', navigationLabel: '', tripCategoryTags: [],
   seoTitle: '', seoDescription: '', seoKeywords: '',
@@ -216,19 +217,26 @@ export default function TripForm() {
 
             <div className="form-row">
               <div className="form-group">
+                <label className="form-label">Brand <span className="required">*</span></label>
+                <select id="trip-brand" className="form-select" value={form.brand || 'Detours'} onChange={e => set('brand', e.target.value)}>
+                  {BRANDS.map(b => <option key={b}>{b}</option>)}
+                </select>
+                <span className="form-hint">Determines which website the trip appears on and payment / email defaults for departures.</span>
+              </div>
+              <div className="form-group">
                 <label className="form-label">Trip Type <span className="required">*</span></label>
                 <select id="trip-type" className={`form-select ${errors.tripType ? 'error' : ''}`} value={form.tripType} onChange={e => set('tripType', e.target.value)}>
                   {TRIP_TYPES.map(t => <option key={t}>{t}</option>)}
                 </select>
               </div>
+            </div>
+
+            <div className="form-row">
               <div className="form-group">
                 <label className="form-label">Duration (days) <span className="required">*</span></label>
                 <input type="number" id="trip-duration" className={`form-input ${errors.duration ? 'error' : ''}`} value={form.duration} onChange={e => set('duration', e.target.value)} placeholder="e.g. 11" min={1} />
                 {errors.duration && <span className="form-error">{errors.duration}</span>}
               </div>
-            </div>
-
-            <div className="form-row">
               <div className="form-group">
                 <label className="form-label">Region <span className="required">*</span></label>
                 <select id="trip-region" className={`form-select ${errors.region ? 'error' : ''}`} value={form.region} onChange={e => set('region', e.target.value)}>

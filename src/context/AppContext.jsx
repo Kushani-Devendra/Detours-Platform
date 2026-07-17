@@ -5,6 +5,7 @@ import React, { createContext, useContext, useReducer, useEffect } from 'react';
 const INITIAL_TRIPS = [
   {
     id: 'trip-1',
+    brand: 'Detours',
     title: '11 Days in Greece',
     slug: 'gay-tours/greece',
     shortDescription: 'An unforgettable journey through ancient ruins, stunning islands, and vibrant culture. From the bustling streets of Athens to the iconic cliffs of Santorini.',
@@ -81,6 +82,7 @@ const INITIAL_TRIPS = [
   },
   {
     id: 'trip-2',
+    brand: 'Detours',
     title: '13 Days in Thailand & Cambodia',
     slug: 'gay-tours/thailand-cambodia',
     shortDescription: 'Experience the spiritual temples of Angkor Wat, the vibrant street markets of Bangkok, and the crystal-clear waters of Thailand\'s islands.',
@@ -117,6 +119,7 @@ const INITIAL_TRIPS = [
   },
   {
     id: 'trip-3',
+    brand: 'Mawari',
     title: '10 Days in Japan',
     slug: 'gay-tours/japan',
     shortDescription: 'From the neon-lit streets of Tokyo to the ancient temples of Kyoto, experience Japan\'s perfect blend of tradition and modernity.',
@@ -150,6 +153,7 @@ const INITIAL_TRIPS = [
   },
   {
     id: 'trip-4',
+    brand: 'Mawari',
     title: 'Rhine River Cruise',
     slug: 'one-time-trips/rhine-cruise',
     shortDescription: 'A once-in-a-lifetime cruise along the scenic Rhine River, passing through Germany, France, and the Netherlands.',
@@ -397,9 +401,25 @@ function appReducer(state, action) {
       break;
 
     // BOOKINGS
-    case 'ADD_BOOKING':
-      newState = { ...state, bookings: [...state.bookings, action.payload] };
+    case 'ADD_BOOKING': {
+      const newBookings = [...state.bookings, action.payload];
+      // Auto Sold Out / Waitlist Only: recalculate traveler count for the affected departure
+      const affectedDepId = action.payload.departureId;
+      const updatedDepartures = state.departures.map(d => {
+        if (d.id !== affectedDepId) return d;
+        const confirmedTravelers = newBookings
+          .filter(b => b.departureId === affectedDepId && b.status === 'Confirmed')
+          .reduce((sum, b) => sum + (b.travelers?.length || 1), 0);
+        const available = d.maxParticipants - confirmedTravelers;
+        if (available <= 0 && d.status === 'Open for Booking') {
+          const nextStatus = d.waitlistEnabled ? 'Waitlist Only' : 'Sold Out';
+          return { ...d, status: nextStatus };
+        }
+        return d;
+      });
+      newState = { ...state, bookings: newBookings, departures: updatedDepartures };
       break;
+    }
     case 'UPDATE_BOOKING':
       newState = { ...state, bookings: state.bookings.map(b => b.id === action.payload.id ? { ...b, ...action.payload } : b) };
       break;
@@ -465,6 +485,11 @@ function appReducer(state, action) {
 
 const AppContext = createContext(null);
 
+const INITIAL_BRAND_SETTINGS = {
+  Detours: { nearDepartureWarningThreshold: 90 },
+  Mawari: { nearDepartureWarningThreshold: 90 },
+};
+
 export function AppProvider({ children }) {
   const storedState = getStoredState('kapuli_state', null);
 
@@ -475,6 +500,7 @@ export function AppProvider({ children }) {
     emailTemplates: INITIAL_EMAIL_TEMPLATES,
     auditLog: INITIAL_AUDIT_LOG,
     requirementsLibrary: INITIAL_REQUIREMENTS_LIBRARY,
+    brandSettings: INITIAL_BRAND_SETTINGS,
     loyaltyCredits: [],
     toasts: [],
   };
@@ -509,11 +535,16 @@ export function AppProvider({ children }) {
 
   // Helper: check if departure is at-risk
   const isAtRisk = (departure) => {
+    const trip = state.trips.find(t => t.id === departure.tripId);
+    const threshold = trip && trip.brand && state.brandSettings && state.brandSettings[trip.brand] 
+      ? state.brandSettings[trip.brand].nearDepartureWarningThreshold 
+      : 90;
+    
     const daysUntil = Math.floor((new Date(departure.departureDate) - new Date()) / (1000 * 60 * 60 * 24));
     const confirmedTravelers = state.bookings
       .filter(b => b.departureId === departure.id && b.status === 'Confirmed')
       .reduce((sum, b) => sum + b.travelers.length, 0);
-    return daysUntil <= 90 && confirmedTravelers < departure.minParticipants;
+    return daysUntil <= threshold && confirmedTravelers < departure.minParticipants;
   };
 
   // Helper: get confirmed traveler count
