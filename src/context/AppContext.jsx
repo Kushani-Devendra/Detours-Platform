@@ -411,11 +411,30 @@ function appReducer(state, action) {
           .filter(b => b.departureId === affectedDepId && b.status === 'Confirmed')
           .reduce((sum, b) => sum + (b.travelers?.length || 1), 0);
         const available = d.maxParticipants - confirmedTravelers;
+        
+        let nextStatus = d.status;
         if (available <= 0 && d.status === 'Open for Booking') {
-          const nextStatus = d.waitlistEnabled ? 'Waitlist Only' : 'Sold Out';
-          return { ...d, status: nextStatus };
+          nextStatus = d.waitlistEnabled ? 'Waitlist Only' : 'Sold Out';
         }
-        return d;
+
+        let updatedRooms = d.rooms || [];
+        const booking = action.payload;
+        if (booking.roomId && updatedRooms.length > 0) {
+           updatedRooms = updatedRooms.map(r => {
+             if (r.id !== booking.roomId) return r;
+             
+             if (booking.roomingPreference === 'pair' && r.capacity === 2) {
+               const currentOccupants = r.reservedBy ? (Array.isArray(r.reservedBy) ? r.reservedBy : [r.reservedBy]) : [];
+               const newOccupants = [...currentOccupants, booking.id];
+               const status = newOccupants.length >= r.capacity ? 'Reserved' : 'Partially Reserved';
+               return { ...r, reservedBy: newOccupants, status };
+             } else {
+               return { ...r, reservedBy: [booking.id], status: 'Reserved' };
+             }
+           });
+        }
+        
+        return { ...d, status: nextStatus, rooms: updatedRooms };
       });
       newState = { ...state, bookings: newBookings, departures: updatedDepartures };
       break;
